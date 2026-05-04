@@ -1,0 +1,37 @@
+---
+- name: Monitoring System
+  hosts: all
+  become: yes
+
+  vars_prompt:
+    - name: student_name
+      prompt: "Please enter your full name"
+      private: no
+
+  tasks:
+    - name: Copy script
+      copy:
+        src: metrics.sh
+        dest: /tmp/metrics.sh
+        mode: '0755'
+
+    - name: Run metrics script
+      command: bash /tmp/metrics.sh
+      register: script_output
+
+    - name: Copy CSS
+      copy:
+        src: style.css
+        dest: /var/www/html/style.css
+        mode: '0644'
+
+    - name: Deploy dashboard
+      template:
+        src: index.html
+        dest: /var/www/html/index.html
+        mode: '0644'
+      vars:
+        display_name: "{{ student_name }}"
+        host_name: "{{ ansible_hostname }}"
+        stats_output: "{{ script_output.stdout }}"
+        update_time: "{{ ansible_date_time.time }}"

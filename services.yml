@@ -1,0 +1,38 @@
+---
+- name: Configure Web Server
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Stop nginx service
+      service:
+        name: nginx
+        state: stopped
+      ignore_errors: yes
+
+    - name: Remove broken Jenkins repository list
+      file:
+        path: /etc/apt/sources.list.d/jenkins.list
+        state: absent
+
+    - name: Force switch to HTTPS Main Mirror
+      shell: |
+        sed -i 's|http://eg.archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        sed -i 's|http://archive.ubuntu.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+        sed -i 's|http://|https://|g' /etc/apt/sources.list.d/*.sources
+      ignore_errors: yes
+
+    - name: Clean and update apt cache
+      apt:
+        update_cache: yes
+        clean: yes
+      ignore_errors: yes
+
+    - name: Install lighttpd with fix-missing
+      shell: apt-get install -y --fix-missing lighttpd
+
+    - name: Start and enable lighttpd
+      service:
+        name: lighttpd
+        state: started
+        enabled: yes
